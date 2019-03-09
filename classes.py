@@ -6,154 +6,228 @@ import time
 
 driver = webdriver.Chrome(r'C:\Users\leosc\Downloads\chromedriver')
 
-wait = WebDriverWait(driver, 5)
+wait = WebDriverWait(driver, 2)
 
-
-def build(item, value=None):
-    try:
-        item.sparte().click()
-        time.sleep(1)
-        item.toolTip().click()
-        time.sleep(1)
-        try:
-            wait.until(EC.presence_of_element_located((By.XPATH, "//input["
-                                                             "@class='amount_input']"))).send_keys(value)
-        except:
-            pass
-        time.sleep(1)
-        item.ausbauButton().click()
-    except:
-        pass
-
-def compare(item1, *args):
-    a = item1.LVL()
-    for argu in args:
-        a -= argu.LVL()
-        return a
 
 def checkIfOvermarked():
-
     for res in [resMet, resCrys, resDeut]:
         try:
             if res.overmarked():
                 return res
 
         except Exception as e:
+            print(e)
             pass
 
 
+def compare(item, *args):
+    a = item.LVL()
+    for argu in args:
+        a -= argu.LVL()
+        return a
 
-class Build:
 
-    def __init__(self, ref):
+class Buildables():
 
-        self.toolTip = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[@ref=\''+str(ref)+'\']'))))
-        self.LVL = lambda: int(wait.until(EC.presence_of_element_located((By.XPATH, ('//*[@ref=\''+str(
-            ref)+'\']/span/span')))).text)
-        #self.techTree = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[@id="href" '
-                                                                                      # 'contains('
-                                                                                      # '\'https://s158-de.ogame.gameforge.com/game/index.php?page=techtree&tab=2&techID=113\')]')))).click().wait.until(EC.presence_of_element_located((By.XPATH, ('//*[@id="href" '
-                                                                                      # 'contains(text(), '
-                                                                                      #                                                                                                                                                             'Technik\')))).click().
-        self.ausbauButton = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[contains(text(),\'Ausbauen\')]'))))
+    def __repr__(self):
+        return self.sparte, self.toolTip
 
-class Versorgung(Build):
+    def __init__(self, name, ref, sparte, techTree, ausbauButton='Ausbauen', *args, **kwargs):
 
-    def __init__(self, ref):
-        super().__init__(ref)
-        self.sparte = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[contains(text(),'
-                                                                                    '\'Versorgung\')]'))))
+        self.name = name
+        self.toolTip = lambda: wait.until(
+                EC.presence_of_element_located((By.XPATH, ('//*[@ref=\'{}\']').format(ref))))
+        self.LVL = lambda: int(
+                wait.until(EC.presence_of_element_located((By.XPATH, ('//*[@ref=\'' + str(
+                        ref) + '\']/span/span')))).text)
+        self.techTree = techTree
+        self.ausbauButton = lambda: wait.until(
+                EC.presence_of_element_located((By.XPATH,
+                                                ('//*[contains(text(),\'{}\')]').format(
+                                                        ausbauButton))))
+        self.sparte = lambda: wait.until(
+                EC.presence_of_element_located(
+                        (By.XPATH, ('//*[contains(text(),\'{}\')]').format(sparte))))
 
-class Anlagen(Build):
+    def build(self, value=None):
 
-    def __init__(self, ref):
-        super().__init__(ref)
-        self.sparte = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[@class=\'textlabel\' and contains(text(),\'Anlagen\')]'))))
+        self.sparte().click()
+        self.toolTip().click()
+        try:
+            wait.until(EC.presence_of_element_located((By.XPATH, "//input["
+                                                                 "@class='amount_input']"))).send_keys(
+                    value)
+        except:
+            pass
+        try:
+            wait.until(
+                    EC.presence_of_element_located((By.XPATH, (
+                        '//*[@id="content"]/div[3]/a[@class=\'build-it_disabled\']'))))
+            findTech(self.name)
+        except:
+            pass
+        try:
+            self.ausbauButton().click()
+        except:
+            pass
 
-class Forschung(Build):
 
-    def __init__(self, ref):
-        super().__init__(ref)
-        self.sparte = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[@class=\'textlabel\' and contains(text(),\'Forschung\')]'))))
-        self.ausbauButton = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[contains(text(),\'Erforschen\')]'))))
+def findTech(item):
+    (wait.until(
+            EC.presence_of_element_located(
+                    (By.XPATH, ('//*[contains(@id="href",\'https://s158-de.ogame.gameforge.com'
+                                '/game\
+                                /index.php?page=techtree&tab=2&techID'
+                                '=113\')]')))).click()).wait.until(
+            EC.presence_of_element_located(
+                    (By.XPATH, ('//*[contains(@id="href", \'Technik\')]')))).click(
 
-class Schiffswerft(Build):
+            ).wait.until(
+            EC.presence_of_element_located((By.XPATH, (
+                '//*[@id="technology"]/div/h3[contains(text(),\'{}}\']').format(
+                    item.techTree)))).click()
 
-    def __init__(self, ref):
-        super().__init__(ref)
-        self.sparte = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[@class=\'textlabel\' and contains(text(),\'Schiffswerft\')]'))))
-        self.ausbauButton = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[contains(text(), '
-                                                                                          '\'Bauen\')]'))))
+    wait.until(EC.presence_of_element_located((By.XPATH, (
+        '//*[@id="technology"]/div/div[5]/table/tbody/tr[2]/td[1]/a/[contains(text('
+        '),\'{}\')]//ancestor::td[2]/a/ul/li[1]').format(item.name))))
 
-class Verteidigung(Build):
 
-    def __init__(self, ref):
-        super().__init__(ref)
-        self.sparte = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[@class=\'textlabel\' and contains(text(),\'Verteidigung\')]'))))
-        self.ausbauButton = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//*[contains(text(),'
-                                                                                          '\'Bauen\')]'))))
+def defBuildMod():
+    schWerft.sparte().click()
+    if roboFab.LVL() < 2:
+        roboFab.build()
+    elif schWerft.LVL() < 1:
+        schWerft.build()
+    else:
+        pass
+    metalMine.sparte().click()
+    driver.find_element_by_xpath('//*[contains(text(), \'Versorgungseinstellungen\')]').click()
+    totProductionMSE = 10 * ((float(((wait.until(EC.presence_of_element_located((By.XPATH,
+                                                                                 '//*['
+                                                                                 '@id="inhalt"]/div[2]/div[2]/form/table/tbody/tr[17]/td[2]/span')))).text)) + 2 * float(
+            ((wait.until(EC.presence_of_element_located((By.XPATH,
+                                                         '//*[@id="inhalt"]/div['
+                                                         '2]/div['
+                                                         '2]/form/table/tbody/tr['
+                                                         '17]/td['
+                                                         '3]/span')))).text)) + 3 * float(
+            ((wait.until(EC.presence_of_element_located((By.XPATH,
+                                                         '//*[@id="inhalt"]/div['
+                                                         '2]/div['
+                                                         '2]/form/table/tbody/tr['
+                                                         '17]/td['
+                                                         '4]/span'))))).text)) / 24)
+
+    btnRak.sparte().click()
+
+    try:
+        shipCountRak = float(
+                wait.until(EC.presence_of_element_located(
+                        (By.XPATH, '//*[@ref=\'401\' and @id="shipcount"]'))).text)
+
+        shipCountLl = float(
+                wait.until(EC.presence_of_element_located(
+                        (By.XPATH, '//*[@ref=\'402\' and @id="shipcount"]'))).text)
+
+    # 75 Raketenwerfer : 150 Leichten Laser : 8 Gauskanonen : 1 Plasmawerfer
+    # + kleine und große Schildkuppel
+
+    except:
+        shipCountRak = 0
+        shipCountLl = 0
+        pass
+
+    numRaksToBuild = 75 * (round(totProductionMSE / 135.000))
+    numLlToBuild = 150 * (round(totProductionMSE / 135.000))
+    print(totProductionMSE, shipCountLl, shipCountRak, btnRak.LVL())
+    print(numRaksToBuild, numLlToBuild)
+    btnRak.sparte().click()
+
+    if btnRak.LVL() + shipCountRak < numRaksToBuild:
+
+        btnRak.build((numRaksToBuild-btnRak.LVL()-shipCountRak))
+
+    elif btnLLas.LVL() + shipCountLl < numLlToBuild:
+
+        btnLLas.build(numLlToBuild-btnLLas.LVL()-shipCountLl)
+
+    else:
+        print('Enough Def')
+        pass
+
 
 class Resources():
 
     def __init__(self, resource, tank):
-        self.overmarked = lambda: wait.until(EC.presence_of_element_located((By.XPATH, ('//span[@id=\''+resource+'\' and @class=\'overmark\']'))))
-        self.amount = lambda: int(wait.until(EC.presence_of_element_located((By.XPATH, ('//span['                                                                                       '@id=\''+resource+'\']')))).text)
+        self.overmarked = lambda: wait.until(EC.presence_of_element_located(
+                (By.XPATH, ('//span[@id=\'' + resource + '\' and @class=\'overmark\']'))))
+        self.amount = lambda: int(wait.until(EC.presence_of_element_located((By.XPATH, (
+                '//span['
+                '@id=\'' + resource + '\']')))).text)
         self.tank = tank
 
 
+metalMine = Buildables('Metallmine', 1, 'Versorgung', 'Konstruktion')
+crystMine = Buildables('Kristallmine', 2, 'Versorgung', 'Konstruktion')
+deutMine = Buildables('Deuterium-Synthetisierer', 3, 'Versorgung', 'Konstruktion')
+powerPlant = Buildables('Solarkraftwerk', 4, 'Versorgung', 'Konstruktion')
+metalTank = Buildables('Metallspeicher', 22, 'Versorgung', 'Konstruktion')
+crystTank = Buildables('Kristallspeicher', 23, 'Versorgung', 'Konstruktion')
+deutTank = Buildables('Deuteriumtank', 24, 'Versorgung', 'Konstruktion')
+roboFab = Buildables('Roboterfabrik', 14, 'Anlagen', 'Konstruktion')
+schWerft = Buildables('Raumschiffswerft', 21, 'Anlagen', 'Konstruktion')
+forschLab = Buildables('Forschungslabor', 31, 'Anlagen', 'Konstruktion')
+eTech = Buildables('Energietechnik', 113, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+laserTech = Buildables('Lasertechnik', 120, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+ioTech = Buildables('Ionentechnik', 121, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+hyperTech = Buildables('Hyperraumtechnik', 114, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+plasmaTech = Buildables('Plasmatechnik', 122, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+verbrTech = Buildables('Verbrennungstriebwerk', 115, 'Forschung', 'Forschung',
+                       ausbauButton='Erforschen')
+impTech = Buildables('Impulstriebwerk', 117, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+hyperAntTech = Buildables('Hyperraumantrieb', 118, 'Forschung', 'Forschung',
+                          ausbauButton='Erforschen')
+spioTech = Buildables('Spionagetechnik', 106, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+compTech = Buildables('Computertechnik', 108, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+astroTech = Buildables('Astrophysik', 124, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+intergalFTech = Buildables('Intergalaktisches Forschungsnetzwerk', 123, 'Forschung', 'Forschung',
+                           ausbauButton='Erforschen')
+graviTech = Buildables('Gravitationforschung', 199, 'Forschung', 'Forschung',
+                       ausbauButton='Erforschen')
+weapTech = Buildables('Waffentechnik', 109, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+shieldTech = Buildables('Schildtechnik', 110, 'Forschung', 'Forschung', ausbauButton='Erforschen')
+panzTech = Buildables('Raumschiffpanzerung', 111, 'Forschung', 'Forschung',
+                      ausbauButton='Erforschen')
+numLJ = Buildables('Platzhalter', 204, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+numSJ = Buildables('Platzhalter', 205, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumXer = Buildables('Platzhalter', 206, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumSS = Buildables('Platzhalter', 207, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumKT = Buildables('Platzhalter', 202, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumGT = Buildables('Platzhalter', 203, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumKolo = Buildables('Platzhalter', 208, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumSXer = Buildables('Platzhalter', 215, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumBB = Buildables('Platzhalter', 211, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumZer = Buildables('Platzhalter', 213, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumDstar = Buildables('Platzhalter', 214, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumRec = Buildables('Platzhalter', 209, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumSpio = Buildables('Platzhalter', 210, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnnumSol = Buildables('Platzhalter', 212, 'Schiffswerft', 'Schiffe', ausbauButton='In Bauliste')
+btnRak = Buildables('Raketenwerfer', 401, 'Verteidigung', 'Verteidigung', ausbauButton='Bauen')
+btnLLas = Buildables('Leichtes Lasergeschütz', 402, 'Verteidigung', 'Verteidigung',
+                     ausbauButton='Bauen')
+btnSLas = Buildables('Schweres Lasergeschütz', 403, 'Verteidigung', 'Verteidigung',
+                     ausbauButton='Bauen')
+btnGaus = Buildables('Gausskanone', 404, 'Verteidigung', 'Verteidigung', ausbauButton='Bauen')
+btnIoG = Buildables('Ionengeschütz', 405, 'Verteidigung', 'Verteidigung', ausbauButton='Bauen')
+btnPlasma = Buildables('Plasmawerfer', 406, 'Verteidigung', 'Verteidigung', ausbauButton='Bauen')
+btnKlKuppel = Buildables('Kleine Schildkuppel', 407, 'Verteidigung', 'Verteidigung',
+                         ausbauButton='Bauen')
+btnGrKuppel = Buildables('Grosse Schildkuppel', 408, 'Verteidigung', 'Verteidigung',
+                         ausbauButton='Bauen')
+btnabfangRak = Buildables('Abfangrakete', 502, 'Verteidigung', 'Verteidigung', ausbauButton='Bauen')
+btnInerplaRak = Buildables('Interplanetarrakete', 503, 'Verteidigung', 'Verteidigung',
+                           ausbauButton='Bauen')
 
-
-
-metalMine = Versorgung(1)
-crystMine = Versorgung(2)
-deutMine = Versorgung(3)
-powerPlant = Versorgung(4)
-metalTank = Versorgung(22)
-crystTank = Versorgung(23)
-deutTank = Versorgung(24)
-roboFab = Anlagen(14)
-schWerft = Anlagen(21)
-forschLab = Anlagen(31)
-eTech = Forschung(113)
-laserTech = Forschung(120)
-ioTech = Forschung(121)
-hyperTech = Forschung(114)
-plasmaTech = Forschung(122)
-verbrTech = Forschung(115)
-impTech = Forschung(117)
-hyperAntTech = Forschung(118)
-spioTech = Forschung(106)
-compTech = Forschung(108)
-astroTech = Forschung(124)
-intergalFTech = Forschung(123)
-graviTech = Forschung(199)
-weapTech = Forschung(109)
-shieldTech = Forschung(110)
-panzTech = Forschung(111)
-numLJ = Schiffswerft(204)
-numSJ = Schiffswerft(205)
-btnnumXer = Schiffswerft(206)
-btnnumSS = Schiffswerft(207)
-btnnumKT = Schiffswerft(202)
-btnnumGT = Schiffswerft(203)
-btnnumKolo = Schiffswerft(208)
-btnnumSXer = Schiffswerft(215)
-btnnumBB = Schiffswerft(211)
-btnnumZer = Schiffswerft(213)
-btnnumDstar = Schiffswerft(214)
-btnnumRec = Schiffswerft(209)
-btnnumSpio = Schiffswerft(210)
-btnnumSol = Schiffswerft(212)
-btnRak = Verteidigung(401)
-btnLLas = Verteidigung(402)
-btnSLas = Verteidigung(403)
-btnGaus = Verteidigung(404)
-btnIoG = Verteidigung(405)
-btnPlasma = Verteidigung(406)
-btnKlKuppel = Verteidigung(407)
-btnGrKuppel = Verteidigung(408)
-btnabfangRak = Verteidigung(502)
-btnInerplaRak = Verteidigung(503)
 resMet = Resources('resources_metal', metalTank)
 resCrys = Resources('resources_crystal', crystTank)
 resDeut = Resources('resources_deuterium', deutTank)
