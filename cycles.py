@@ -1,6 +1,7 @@
 import classes as c
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+import traceback
 
 
 def logInAccount(email, pwd):
@@ -88,7 +89,7 @@ def logInAccount(email, pwd):
 def buildMinesCycle():
     while True:
 
-        c.time.sleep(1)
+        c.time.sleep(15)
 
         newTabs = c.driver.window_handles
         for tab in newTabs:
@@ -104,9 +105,25 @@ def buildMinesCycle():
                 pass
 
             try:
+                c.time.sleep(1)
+                c.btnnumKolo.sparte().click()
+                c.time.sleep(1)
+                if c.btnnumKolo.LVL() < 8:
+                    c.btnnumKolo.build()
+            except Exception:
+                traceback.print_exc()
+                pass
+
+            c.metalMine.sparte().click()
+
+            try:
               c.defBuildMod()
+
             except:
                 pass
+
+
+
 
             c.metalMine.sparte().click()
             #
@@ -118,12 +135,7 @@ def buildMinesCycle():
             #     print('0')
 
             if c.checkIfOvermarked():
-                a = c.checkIfOvermarked().tank
-                print('9')
-
-                a.build()
-                print('1')
-
+                 c.checkIfOvermarked().tank.build()
 
             elif c.resPower.amount() < 0:
                 print('2')
@@ -140,7 +152,6 @@ def buildMinesCycle():
             elif c.compare(c.deutMine, c.crystMine) < -2 and c.resPower.amount() > 0:
                 print('5')
                 c.deutMine.build()
-
 
             else:
                 print('6')

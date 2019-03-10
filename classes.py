@@ -2,12 +2,15 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
+import time, traceback, re
 
 driver = webdriver.Chrome(r'C:\Users\leosc\Downloads\chromedriver')
 
-wait = WebDriverWait(driver, 2)
 
+wait = WebDriverWait(driver, 7)
+
+tryy = {}
+listBuildables = []
 
 def checkIfOvermarked():
     for res in [resMet, resCrys, resDeut]:
@@ -35,6 +38,7 @@ class Buildables():
     def __init__(self, name, ref, sparte, techTree, ausbauButton='Ausbauen', *args, **kwargs):
 
         self.name = name
+        self.ref = ref
         self.toolTip = lambda: wait.until(
                 EC.presence_of_element_located((By.XPATH, ('//*[@ref=\'{}\']').format(ref))))
         self.LVL = lambda: int(
@@ -48,58 +52,82 @@ class Buildables():
         self.sparte = lambda: wait.until(
                 EC.presence_of_element_located(
                         (By.XPATH, ('//*[contains(text(),\'{}\')]').format(sparte))))
+        tryy[name] = self
+
+
+    def findTech(self):
+
+
+        # self.toolTip().click()
+        time.sleep(2)
+        wait.until(EC.presence_of_element_located(
+                        (By.XPATH, ('//*[@class=\'techtree_img\']')))).click()
+        time.sleep(2)
+
+        wait.until(EC.presence_of_element_located(
+                        (By.XPATH, ('//*[contains(text(),\'Technik\')]')))).click()
+
+        # wait.until(EC.presence_of_element_located((By.XPATH, (
+        #             '//*[@id="technology"]/div/h3[contains(text(),\'{}\')]').format(
+        #                 self.techTree)))).click()
+        needToBuild = wait.until(EC.presence_of_element_located((By.XPATH, (
+            '//*[@id="technology"]//*[contains(@class,\'{}\')]//ancestor::tr//*[@class= \'overmark\']').format(self.ref)))).get_attribute('innerHTML')
+        print(needToBuild)
+        buildIt = re.findall(r'\w+', needToBuild, re.MULTILINE)
+        print(buildIt)
+        return tryy[buildIt[0]]
 
     def build(self, value=None):
 
-        self.sparte().click()
-        self.toolTip().click()
         try:
-            wait.until(EC.presence_of_element_located((By.XPATH, "//input["
-                                                                 "@class='amount_input']"))).send_keys(
-                    value)
-        except:
-            pass
-        try:
-            wait.until(
-                    EC.presence_of_element_located((By.XPATH, (
-                        '//*[@id="content"]/div[3]/a[@class=\'build-it_disabled\']'))))
-            findTech(self.name)
-        except:
-            pass
-        try:
+            time.sleep(1)
+
+            self.sparte().click()
+            time.sleep(1)
+            self.toolTip().click()
+            time.sleep(1)
+            try:
+                if wait.until(EC.presence_of_element_located((By.XPATH, ('//*[contains(@class,\'cost\') and contains(@class,\'overmark\')]')))):
+                    return
+
+            except Exception:
+                traceback.print_exc()
+                pass
+            try:
+                wait.until(
+                        EC.presence_of_element_located((By.XPATH, (
+                            '//*[@class=\'build-it_disabled\']'))))
+                Buildables.findTech(self).build()
+            except Exception:
+                traceback.print_exc()
+                pass
+            time.sleep(1)
+
+            try:
+                wait.until(EC.presence_of_element_located((By.XPATH, "//input["
+                                                                     "@class='amount_input']"))).send_keys(
+                        value)
+            except:
+                pass
+
+            time.sleep(1)
+
             self.ausbauButton().click()
         except:
             pass
 
 
-def findTech(item):
-    (wait.until(
-            EC.presence_of_element_located(
-                    (By.XPATH, ('//*[contains(@id="href",\'https://s158-de.ogame.gameforge.com'
-                                '/game\
-                                /index.php?page=techtree&tab=2&techID'
-                                '=113\')]')))).click()).wait.until(
-            EC.presence_of_element_located(
-                    (By.XPATH, ('//*[contains(@id="href", \'Technik\')]')))).click(
 
-            ).wait.until(
-            EC.presence_of_element_located((By.XPATH, (
-                '//*[@id="technology"]/div/h3[contains(text(),\'{}}\']').format(
-                    item.techTree)))).click()
-
-    wait.until(EC.presence_of_element_located((By.XPATH, (
-        '//*[@id="technology"]/div/div[5]/table/tbody/tr[2]/td[1]/a/[contains(text('
-        '),\'{}\')]//ancestor::td[2]/a/ul/li[1]').format(item.name))))
 
 
 def defBuildMod():
-    schWerft.sparte().click()
-    if roboFab.LVL() < 2:
-        roboFab.build()
-    elif schWerft.LVL() < 1:
-        schWerft.build()
-    else:
-        pass
+    # schWerft.sparte().click()
+    # if roboFab.LVL() < 2:
+    #     roboFab.build()
+    # elif schWerft.LVL() < 1:
+    #     schWerft.build()
+    # else:
+    #     pass
     metalMine.sparte().click()
     driver.find_element_by_xpath('//*[contains(text(), \'Versorgungseinstellungen\')]').click()
     totProductionMSE = 10 * ((float(((wait.until(EC.presence_of_element_located((By.XPATH,
@@ -141,7 +169,6 @@ def defBuildMod():
     numLlToBuild = 150 * (round(totProductionMSE / 135.000))
     print(totProductionMSE, shipCountLl, shipCountRak, btnRak.LVL())
     print(numRaksToBuild, numLlToBuild)
-    btnRak.sparte().click()
 
     if btnRak.LVL() + shipCountRak < numRaksToBuild:
 
